@@ -36,20 +36,22 @@ Return JSON only:
     // SPEED FIX: Set timeout and reduce tokens
     const startTime = Date.now();
     
+    // FIX: Properly type the Promise.race result
     const response = await Promise.race([
       anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500, // REDUCED from 4000
+        max_tokens: 1500,
         messages: [{ role: 'user', content: appPrompt }]
       }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('API timeout')), 25000) // 25 second timeout
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('API timeout')), 25000)
       )
     ]);
 
     const duration = Date.now() - startTime;
     console.log(`✅ API call completed in ${duration}ms`);
 
+    // FIX: Now TypeScript knows response has content property
     const textContent = response.content.find(
       (block): block is any => block.type === 'text'
     );
@@ -96,7 +98,7 @@ Return JSON only:
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Fast generation error:', error.message);
     
     // SPEED FIX: Always return something, even if AI fails
@@ -129,7 +131,7 @@ Return JSON only:
 
 // SPEED FIX: Fast fallback generation
 function generateFastFallback(idea: string, theme: string, layout: string) {
-  const titles = {
+  const titles: Record<string, string> = {
     minimal: 'Clean',
     playful: 'Fun',
     professional: 'Pro',
@@ -149,7 +151,7 @@ function generateFastFallback(idea: string, theme: string, layout: string) {
 
 // SPEED FIX: Fast app generation
 function generateFastApp(idea: string, theme: string, layout: string) {
-  const gradients = {
+  const gradients: Record<string, string> = {
     minimal: 'from-gray-100 to-white',
     playful: 'from-pink-100 via-purple-50 to-indigo-100',
     professional: 'from-blue-50 to-indigo-100',
@@ -157,7 +159,7 @@ function generateFastApp(idea: string, theme: string, layout: string) {
     techy: 'from-emerald-50 to-teal-100'
   };
 
-  const textColors = {
+  const textColors: Record<string, string> = {
     minimal: 'text-gray-900',
     playful: 'text-purple-900',
     professional: 'text-blue-900',
@@ -165,7 +167,7 @@ function generateFastApp(idea: string, theme: string, layout: string) {
     techy: 'text-emerald-900'
   };
 
-  const cols = {
+  const cols: Record<string, string> = {
     single: '1',
     dual: '2',
     triple: '3',
@@ -188,7 +190,7 @@ export default function App() {
         </header>
         
         <div className="grid grid-cols-1 md:grid-cols-${cols[layout]} gap-6">
-          ${Array(parseInt(cols[layout])).fill(0).map((_, i) => `
+          ${Array(parseInt(cols[layout] || '3')).fill(0).map((_, i) => `
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/50">
             <h3 className="font-semibold ${textColors[theme]} mb-2">Feature ${i + 1}</h3>
             <p className="${textColors[theme]} opacity-70">Amazing functionality for your app</p>
@@ -204,7 +206,7 @@ export default function App() {
 }
 
 function getThemeGradient(theme: string) {
-  const gradients = {
+  const gradients: Record<string, string> = {
     minimal: 'from-gray-100 to-white',
     playful: 'from-pink-100 to-purple-100',
     professional: 'from-blue-50 to-indigo-100',
@@ -215,7 +217,7 @@ function getThemeGradient(theme: string) {
 }
 
 function getThemeText(theme: string) {
-  const colors = {
+  const colors: Record<string, string> = {
     minimal: 'text-gray-900',
     playful: 'text-purple-900',
     professional: 'text-blue-900',
@@ -226,6 +228,6 @@ function getThemeText(theme: string) {
 }
 
 function getLayoutCols(layout: string) {
-  const cols = { single: '1', dual: '2', triple: '3', quad: '4' };
+  const cols: Record<string, string> = { single: '1', dual: '2', triple: '3', quad: '4' };
   return cols[layout] || '3';
 }
