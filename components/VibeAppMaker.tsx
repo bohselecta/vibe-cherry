@@ -376,7 +376,7 @@ export default function VibeAppMaker() {
 
   return (
     <div className={`min-h-screen ${GlassTheme.bg} relative overflow-hidden`}>
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 from-opacity-20 via-purple-900 via-opacity-20 to-pink-900 to-opacity-20"></div>
+      <div className="absolute inset-0" style={{background: 'linear-gradient(to bottom right, #18232A, #1B2C37)'}}></div>
       <div className="absolute inset-0 bg-radial-gradient"></div>
       
       <div className="relative z-10 container mx-auto px-6 py-8">
