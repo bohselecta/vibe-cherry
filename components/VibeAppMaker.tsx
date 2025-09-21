@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Code, Download, Save, Eye, Users, Zap, Brain, Heart, ArrowRight, X, Loader2, ExternalLink } from 'lucide-react';
+import { Sparkles, Code, Download, Save, Eye, Users, Zap, Heart, ArrowRight, X, Loader2, ExternalLink } from 'lucide-react';
 
 // Clean Glass Theme (no invalid classes)
 const GlassTheme = {
@@ -393,7 +393,7 @@ export default function VibeAppMaker() {
         <div className="max-w-4xl mx-auto space-y-8">
           {currentStep === 'idea' && (
             <div className={`${GlassTheme.glass} rounded-2xl p-8 text-center`}>
-              <Brain className={`w-16 h-16 ${GlassTheme.textMuted} mx-auto mb-6`} />
+              <img src="/vibecherry-ideabot.png" alt="VibeCherry Ideabot" className="w-16 h-16 mx-auto mb-6" />
               <h2 className={`text-2xl font-bold mb-4 ${GlassTheme.text}`}>What's Your App Idea?</h2>
               <p className={`${GlassTheme.textMuted} mb-8`}>Describe your app vision or let us help you brainstorm</p>
               
