@@ -17,7 +17,7 @@ const GlassTheme = {
 };
 
 // Questionnaire Component
-function IdeationQuestionnaire({ onComplete, onClose }) {
+function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: string) => void; onClose: () => void }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
 
@@ -104,7 +104,7 @@ function IdeationQuestionnaire({ onComplete, onClose }) {
 }
 
 // App Builder Component
-function AppBuilder({ idea, onGenerate }) {
+function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: any) => void }) {
   const [theme, setTheme] = useState('playful');
   const [layout, setLayout] = useState('triple');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -235,7 +235,7 @@ function AppBuilder({ idea, onGenerate }) {
 }
 
 // App Preview Component
-function AppPreview({ appConfig, onSave, onDownload }) {
+function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave: (title: string) => void; onDownload: () => void }) {
   const [title, setTitle] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
 
@@ -357,7 +357,7 @@ function AppPreview({ appConfig, onSave, onDownload }) {
 }
 
 // Public Gallery Component
-function PublicGallery({ apps }) {
+function PublicGallery({ apps }: { apps: any[] }) {
   return (
     <div className={`${GlassTheme.glass} rounded-2xl p-6`}>
       <h3 className={`text-lg font-semibold mb-4 ${GlassTheme.text} flex items-center space-x-2`}>
