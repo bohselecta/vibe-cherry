@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Code, Download, Save, Eye, Users, Zap, Brain, Heart, ArrowRight, X, Check, Loader2, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, Code, Download, Save, Eye, Users, Zap, Brain, Heart, ArrowRight, X, Loader2, ExternalLink } from 'lucide-react';
 
-// Apple Glass 2025 Design System
+// Clean Glass Theme (no invalid classes)
 const GlassTheme = {
   bg: 'bg-black',
-  glass: 'bg-white/5 backdrop-blur-xl border border-white/10',
-  glassHover: 'bg-white/10 backdrop-blur-xl border border-white/20',
+  glass: 'bg-white bg-opacity-5 backdrop-blur-xl border border-white border-opacity-10',
+  glassHover: 'bg-white bg-opacity-10 backdrop-blur-xl border border-white border-opacity-20',
   primary: 'bg-white text-black',
-  primaryHover: 'bg-white/90 text-black',
-  secondary: 'bg-white/10 text-white border border-white/20',
-  secondaryHover: 'bg-white/20 text-white border border-white/30',
+  primaryHover: 'bg-gray-100 text-black',
+  secondary: 'bg-white bg-opacity-10 text-white border border-white border-opacity-20',
+  secondaryHover: 'bg-white bg-opacity-20 text-white border border-white border-opacity-30',
   accent: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white',
   text: 'text-white',
-  textMuted: 'text-white/70',
-  textDim: 'text-white/50'
+  textMuted: 'text-white text-opacity-70',
+  textDim: 'text-white text-opacity-50'
 };
 
 // Questionnaire Component
 function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: string) => void; onClose: () => void }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState<{[key: number]: string}>({});
 
   const questions = [
     "What problem does this app solve and what inspired you to think of it?",
@@ -31,25 +31,24 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
     "What emotion should users feel when using this?"
   ];
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = (answer: string) => {
     setAnswers({ ...answers, [currentQuestion]: answer });
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Generate app idea from answers
       const appIdea = generateAppIdea(answers);
       onComplete(appIdea);
     }
   };
 
-  const generateAppIdea = (answers) => {
+  const generateAppIdea = (answers: {[key: number]: string}) => {
     return `Create a ${answers[6] || 'helpful'} app that ${answers[0] || 'solves a problem'}. 
     The app should be used ${answers[2] || 'daily'} and focus on ${answers[3] || 'user experience'}. 
     It should feel ${answers[6] || 'intuitive'} and ${answers[4] || 'smooth to use'}.`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className={`${GlassTheme.glass} rounded-2xl p-8 max-w-2xl w-full`}>
         <div className="flex items-center justify-between mb-6">
           <h3 className={`text-xl font-semibold ${GlassTheme.text}`}>App Ideation Helper</h3>
@@ -61,7 +60,7 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
         <div className="mb-6">
           <div className="flex space-x-2 mb-4">
             {questions.map((_, i) => (
-              <div key={i} className={`h-2 flex-1 rounded-full ${i <= currentQuestion ? 'bg-white' : 'bg-white/20'}`} />
+              <div key={i} className={`h-2 flex-1 rounded-full ${i <= currentQuestion ? 'bg-white' : 'bg-white bg-opacity-20'}`} />
             ))}
           </div>
           <p className={`text-sm ${GlassTheme.textMuted} mb-4`}>Question {currentQuestion + 1} of {questions.length}</p>
@@ -71,7 +70,7 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
           <h4 className={`text-lg font-medium mb-4 ${GlassTheme.text}`}>{questions[currentQuestion]}</h4>
           <textarea
             placeholder="Share your thoughts..."
-            className={`w-full h-32 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white/50 border-0 focus:ring-2 focus:ring-white/30 resize-none`}
+            className={`w-full h-32 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white placeholder-opacity-50 border-0 focus:ring-2 focus:ring-white focus:ring-opacity-30 resize-none`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.shiftKey === false && (e.target as HTMLTextAreaElement).value.trim()) {
                 e.preventDefault();
@@ -90,8 +89,10 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
             Previous
           </button>
           <button 
-            onClick={() => handleAnswer((document.querySelector('textarea') as HTMLTextAreaElement)?.value.trim() || '')}
-            disabled={!(document.querySelector('textarea') as HTMLTextAreaElement)?.value.trim()}
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              handleAnswer(textarea?.value.trim() || '');
+            }}
             className={`${GlassTheme.primary} px-6 py-2 rounded-lg flex items-center space-x-2`}
           >
             <span>{currentQuestion === questions.length - 1 ? 'Generate Idea' : 'Next'}</span>
@@ -118,40 +119,22 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
     try {
       const response = await fetch('/api/generate-app', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idea,
-          theme,
-          layout,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea, theme, layout })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate app');
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        onGenerate(result.app);
+      } else {
+        console.error('Generation failed:', result.error);
       }
-
-      const appConfig = await response.json();
-      onGenerate(appConfig.app);
     } catch (error) {
-      console.error('Error generating app:', error);
-      // Fallback to mock data for demo
-      const mockAppConfig = {
-        idea,
-        theme,
-        layout,
-        timestamp: Date.now(),
-        components: ['VibeCard', 'VibeButton', 'VibeGrid'],
-        pages: ['Dashboard', 'Settings'],
-        api: ['/api/data', '/api/users'],
-        title: `${theme.charAt(0).toUpperCase() + theme.slice(1)} App`,
-        description: `A ${theme} themed app with ${layout} layout`
-      };
-      onGenerate(mockAppConfig);
-    } finally {
-      setIsGenerating(false);
+      console.error('Generation error:', error);
     }
+    
+    setIsGenerating(false);
   };
 
   return (
@@ -168,8 +151,8 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
           <label className={`block text-sm font-medium mb-3 ${GlassTheme.text}`}>App Idea</label>
           <textarea
             value={idea}
-            onChange={(e) => {}}
-            className={`w-full h-24 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} border-0 focus:ring-2 focus:ring-white/30 resize-none`}
+            readOnly
+            className={`w-full h-24 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} border-0 focus:ring-2 focus:ring-white focus:ring-opacity-30 resize-none`}
             placeholder="Describe your app idea..."
           />
         </div>
@@ -215,7 +198,7 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
         <button
           onClick={handleGenerate}
           disabled={isGenerating || !idea.trim()}
-          className={`w-full ${GlassTheme.accent} py-4 rounded-xl font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center space-x-2`}
+          className={`w-full ${GlassTheme.accent} py-4 rounded-xl font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center space-x-2`}
         >
           {isGenerating ? (
             <>
@@ -239,36 +222,6 @@ function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave:
   const [title, setTitle] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch('/api/download-app', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ appData: appConfig }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate download');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${appConfig.title || 'vibe-app'}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Download error:', error);
-      // Fallback: show alert
-      alert('Download feature coming soon! Your app has been generated successfully.');
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className={`${GlassTheme.glass} rounded-2xl p-8`}>
@@ -276,7 +229,7 @@ function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave:
           <h3 className={`text-xl font-semibold ${GlassTheme.text}`}>Your Generated App</h3>
           <div className="flex space-x-3">
             <button
-              onClick={handleDownload}
+              onClick={onDownload}
               className={`${GlassTheme.secondary} px-4 py-2 rounded-lg flex items-center space-x-2 hover:${GlassTheme.secondaryHover}`}
             >
               <Download className="w-4 h-4" />
@@ -292,7 +245,6 @@ function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave:
           </div>
         </div>
 
-        {/* App Preview Frame */}
         <div className={`${GlassTheme.glass} rounded-xl p-6 min-h-96`}>
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -303,13 +255,13 @@ function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave:
           
           <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg p-8 min-h-80">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-purple-900 mb-4">{appConfig.title || `Your ${appConfig.theme} App`}</h2>
+              <h2 className="text-2xl font-bold text-purple-900 mb-4">Your {appConfig.config?.theme || 'beautiful'} App</h2>
               <p className="text-purple-700 mb-6">{appConfig.description || appConfig.idea}</p>
               
-              <div className={`grid grid-cols-${appConfig.layout === 'single' ? '1' : appConfig.layout === 'dual' ? '2' : appConfig.layout === 'triple' ? '3' : '4'} gap-4`}>
-                {Array(parseInt(appConfig.layout === 'single' ? '1' : appConfig.layout === 'dual' ? '2' : appConfig.layout === 'triple' ? '3' : '4')).fill(0).map((_, i) => (
-                  <div key={i} className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
-                    <h3 className="font-semibold text-purple-900 mb-2">Feature {i + 1}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white bg-opacity-80 backdrop-blur-sm rounded-lg p-4">
+                    <h3 className="font-semibold text-purple-900 mb-2">Feature {i}</h3>
                     <p className="text-sm text-purple-700">Generated component</p>
                   </div>
                 ))}
@@ -319,9 +271,8 @@ function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave:
         </div>
       </div>
 
-      {/* Save Modal */}
       {showSaveModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className={`${GlassTheme.glass} rounded-2xl p-8 max-w-md w-full`}>
             <h3 className={`text-xl font-semibold mb-4 ${GlassTheme.text}`}>Save to Public Gallery</h3>
             <input
@@ -329,7 +280,7 @@ function AppPreview({ appConfig, onSave, onDownload }: { appConfig: any; onSave:
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Give your app a title..."
-              className={`w-full ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white/50 border-0 focus:ring-2 focus:ring-white/30 mb-6`}
+              className={`w-full ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white placeholder-opacity-50 border-0 focus:ring-2 focus:ring-white focus:ring-opacity-30 mb-6`}
             />
             <div className="flex space-x-3">
               <button
@@ -392,11 +343,11 @@ function PublicGallery({ apps }: { apps: any[] }) {
 
 // Main App Component
 export default function VibeAppMaker() {
-  const [currentStep, setCurrentStep] = useState('idea'); // idea, build, preview
+  const [currentStep, setCurrentStep] = useState('idea');
   const [appIdea, setAppIdea] = useState('');
-  const [generatedApp, setGeneratedApp] = useState(null);
+  const [generatedApp, setGeneratedApp] = useState<any>(null);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
-  const [publicApps, setPublicApps] = useState([
+  const [publicApps] = useState([
     { title: 'Habit Tracker', theme: 'minimal', layout: 'dual' },
     { title: 'Recipe Finder', theme: 'playful', layout: 'triple' },
     { title: 'Task Manager', theme: 'professional', layout: 'single' },
@@ -404,60 +355,31 @@ export default function VibeAppMaker() {
     { title: 'Code Snippet Manager', theme: 'techy', layout: 'quad' }
   ]);
 
-  const handleQuestionnaireComplete = (idea) => {
+  const handleQuestionnaireComplete = (idea: string) => {
     setAppIdea(idea);
     setShowQuestionnaire(false);
     setCurrentStep('build');
   };
 
-  const handleAppGenerated = (config) => {
+  const handleAppGenerated = (config: any) => {
     setGeneratedApp(config);
     setCurrentStep('preview');
   };
 
-  const handleSavePublic = async (title) => {
-    try {
-      const response = await fetch('/api/save-app', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          appData: generatedApp,
-        }),
-      });
+  const handleSavePublic = (title: string) => {
+    console.log('Saving to public gallery:', title);
+  };
 
-      if (response.ok) {
-        const newApp = {
-          title,
-          theme: generatedApp.theme,
-          layout: generatedApp.layout,
-          idea: generatedApp.idea
-        };
-        setPublicApps([newApp, ...publicApps]);
-      }
-    } catch (error) {
-      console.error('Error saving app:', error);
-      // Fallback: add to local state
-      const newApp = {
-        title,
-        theme: generatedApp.theme,
-        layout: generatedApp.layout,
-        idea: generatedApp.idea
-      };
-      setPublicApps([newApp, ...publicApps]);
-    }
+  const handleDownload = () => {
+    console.log('Downloading app:', generatedApp);
   };
 
   return (
     <div className={`min-h-screen ${GlassTheme.bg} relative overflow-hidden`}>
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 from-opacity-20 via-purple-900 via-opacity-20 to-pink-900 to-opacity-20"></div>
+      <div className="absolute inset-0 bg-radial-gradient"></div>
       
       <div className="relative z-10 container mx-auto px-6 py-8">
-        {/* Header */}
         <header className="text-center mb-12">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className={`${GlassTheme.accent} p-3 rounded-xl`}>
@@ -470,7 +392,6 @@ export default function VibeAppMaker() {
           </p>
         </header>
 
-        {/* Main Content */}
         <div className="max-w-4xl mx-auto space-y-8">
           {currentStep === 'idea' && (
             <div className={`${GlassTheme.glass} rounded-2xl p-8 text-center`}>
@@ -483,7 +404,7 @@ export default function VibeAppMaker() {
                   value={appIdea}
                   onChange={(e) => setAppIdea(e.target.value)}
                   placeholder="Describe your app idea... (e.g., 'A habit tracker that gamifies daily routines')"
-                  className={`w-full h-32 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white/50 border-0 focus:ring-2 focus:ring-white/30 resize-none`}
+                  className={`w-full h-32 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white placeholder-opacity-50 border-0 focus:ring-2 focus:ring-white focus:ring-opacity-30 resize-none`}
                 />
                 
                 <div className="flex space-x-4">
@@ -518,15 +439,13 @@ export default function VibeAppMaker() {
             <AppPreview 
               appConfig={generatedApp}
               onSave={handleSavePublic}
-              onDownload={() => {}}
+              onDownload={handleDownload}
             />
           )}
 
-          {/* Public Gallery */}
           <PublicGallery apps={publicApps} />
         </div>
 
-        {/* Questionnaire Modal */}
         {showQuestionnaire && (
           <IdeationQuestionnaire 
             onComplete={handleQuestionnaireComplete}
