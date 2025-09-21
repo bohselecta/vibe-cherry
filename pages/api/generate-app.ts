@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import Anthropic from '@anthropic-ai/sdk';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Enable CORS
@@ -8,6 +9,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (req.method === 'GET') {
+    return res.status(200).json({ 
+      status: 'ok', 
+      message: 'VibeCherry API is running',
+      hasApiKey: !!process.env.ANTHROPIC_API_KEY
+    });
   }
 
   if (req.method !== 'POST') {
@@ -29,9 +38,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Import Anthropic inside the handler to avoid build issues
-    const { default: Anthropic } = await import('@anthropic-ai/sdk');
-    
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
