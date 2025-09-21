@@ -32,21 +32,20 @@ REQUIREMENTS:
 THEME: ${theme} (${getThemeDescription(theme)})
 LAYOUT: ${layout} columns
 
-Return ONLY valid JSON:
+CRITICAL: Return ONLY valid JSON with this EXACT structure. No markdown, no explanations, just pure JSON:
+
 {
-  "title": "Specific App Name",
-  "description": "What this app actually does",
+  "title": "Weather Dashboard",
+  "description": "A functional weather app with real data",
   "code": {
-    "App.tsx": "// Complete functional React component with useState, handlers, mock data, and real functionality"
+    "App.tsx": "import React, { useState, useEffect } from 'react';\n\nexport default function App() {\n  const [weather, setWeather] = useState(null);\n  const [loading, setLoading] = useState(true);\n  \n  useEffect(() => {\n    // Simulate API call\n    setTimeout(() => {\n      setWeather({ temp: 72, condition: 'Sunny' });\n      setLoading(false);\n    }, 1000);\n  }, []);\n  \n  return (\n    <div className=\"min-h-screen bg-gradient-to-br from-blue-100 to-white p-8\">\n      <div className=\"max-w-4xl mx-auto\">\n        <h1 className=\"text-4xl font-bold text-blue-900 text-center mb-8\">Weather Dashboard</h1>\n        {loading ? (\n          <div className=\"text-center\">Loading...</div>\n        ) : (\n          <div className=\"bg-white rounded-lg p-6 shadow-lg\">\n            <h2 className=\"text-2xl font-semibold text-gray-800\">{weather.temp}°F</h2>\n            <p className=\"text-gray-600\">{weather.condition}</p>\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}"
   },
   "config": {
     "theme": "${theme}",
     "layout": "${layout}",
-    "features": ["working", "interactive", "functional"]
+    "features": ["interactive", "functional", "responsive"]
   }
-}
-
-Generate working functionality, not placeholders. Include actual state management, event handlers, and realistic data.`;
+}`;
 
     console.log('⚡ Making fast API call...');
     
@@ -79,12 +78,38 @@ Generate working functionality, not placeholders. Include actual state managemen
 
     let appData;
     try {
-      const cleanText = textContent.text
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
+      console.log('🔍 Raw Claude response:', textContent.text);
+      
+      // More robust JSON extraction
+      let cleanText = textContent.text;
+      
+      // Try to find JSON block
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanText = jsonMatch[0];
+      } else {
+        // Fallback: remove markdown formatting
+        cleanText = cleanText
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .replace(/^[^{]*/, '') // Remove everything before first {
+          .replace(/[^}]*$/, '') // Remove everything after last }
+          .trim();
+      }
+      
+      console.log('🧹 Cleaned text:', cleanText);
+      
       appData = JSON.parse(cleanText);
+      console.log('✅ Successfully parsed JSON:', appData);
+      
+      // Validate required fields
+      if (!appData.title || !appData.code || !appData.code['App.tsx']) {
+        throw new Error('Missing required fields in AI response');
+      }
+      
     } catch (parseError) {
+      console.log('❌ JSON parse error:', parseError.message);
+      console.log('🔍 Raw response that failed to parse:', textContent.text);
       console.log('⚡ Using fast fallback generation');
       // SPEED FIX: Fast fallback if JSON parsing fails
       appData = generateFastFallback(idea, theme, layout);
