@@ -50,7 +50,13 @@ Return a JSON object with:
       ]
     });
 
-    const appData = JSON.parse(response.content[0].text);
+    const textContent = response.content.find(
+      (block): block is Anthropic.TextBlock => block.type === 'text'
+    );
+    if (!textContent) {
+      throw new Error('No text content received from Claude');
+    }
+    const appData = JSON.parse(textContent.text);
     
     // Generate complete project structure
     const projectFiles = await generateVibeApp(appData);

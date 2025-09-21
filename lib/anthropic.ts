@@ -40,5 +40,11 @@ Return a JSON object with:
     ]
   });
 
-  return JSON.parse(response.content[0].text);
+  const textContent = response.content.find(
+    (block): block is Anthropic.TextBlock => block.type === 'text'
+  );
+  if (!textContent) {
+    throw new Error('No text content received from Claude');
+  }
+  return JSON.parse(textContent.text);
 }
