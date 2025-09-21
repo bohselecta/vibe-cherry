@@ -382,10 +382,8 @@ export default function VibeAppMaker() {
       <div className="relative z-10 container mx-auto px-6 py-8">
         <header className="text-center mb-12">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className={`${GlassTheme.accent} p-3 rounded-xl`}>
-              <Sparkles className="w-8 h-8" />
-            </div>
-            <h1 className={`text-4xl font-bold ${GlassTheme.text}`}>Vibe App Maker</h1>
+            <img src="/vibecherry-logo.png" alt="VibeCherry" className="w-12 h-12" />
+            <h1 className={`text-4xl font-bold ${GlassTheme.text}`}>VibeCherry</h1>
           </div>
           <p className={`text-lg ${GlassTheme.textMuted} max-w-2xl mx-auto`}>
             Create beautiful, AI-generated apps in seconds. No coding required, just pure creativity.
