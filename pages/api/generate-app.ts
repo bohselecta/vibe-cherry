@@ -19,33 +19,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // ENHANCED: Create functional, interactive apps
-    const appPrompt = `Create a fully functional ${theme} themed React app for: "${idea}"
+    const appPrompt = `Create a functional ${theme} React app: "${idea}"
 
-REQUIREMENTS:
-- Use React hooks (useState, useEffect) for interactivity
-- Include realistic mock data and working features
-- Make it actually functional, not just placeholder text
-- Use Tailwind CSS for styling
-- Include proper event handlers and state management
-- Make it look professional and polished
+Requirements: React hooks, Tailwind CSS, working features, ${layout} layout
+Theme: ${theme} (${getThemeDescription(theme)})
 
-THEME: ${theme} (${getThemeDescription(theme)})
-LAYOUT: ${layout} columns
-
-CRITICAL: Return ONLY valid JSON with this EXACT structure. No markdown, no explanations, just pure JSON:
-
+Return ONLY this JSON structure:
 {
-  "title": "Weather Dashboard",
-  "description": "A functional weather app with real data",
+  "title": "App Name",
+  "description": "Brief description",
   "code": {
-    "App.tsx": "import React, { useState, useEffect } from 'react';\n\nexport default function App() {\n  const [weather, setWeather] = useState(null);\n  const [loading, setLoading] = useState(true);\n  \n  useEffect(() => {\n    // Simulate API call\n    setTimeout(() => {\n      setWeather({ temp: 72, condition: 'Sunny' });\n      setLoading(false);\n    }, 1000);\n  }, []);\n  \n  return (\n    <div className=\"min-h-screen bg-gradient-to-br from-blue-100 to-white p-8\">\n      <div className=\"max-w-4xl mx-auto\">\n        <h1 className=\"text-4xl font-bold text-blue-900 text-center mb-8\">Weather Dashboard</h1>\n        {loading ? (\n          <div className=\"text-center\">Loading...</div>\n        ) : (\n          <div className=\"bg-white rounded-lg p-6 shadow-lg\">\n            <h2 className=\"text-2xl font-semibold text-gray-800\">{weather.temp}°F</h2>\n            <p className=\"text-gray-600\">{weather.condition}</p>\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}"
+    "App.tsx": "// Complete React component with useState, useEffect, and working functionality"
   },
   "config": {
     "theme": "${theme}",
     "layout": "${layout}",
-    "features": ["interactive", "functional", "responsive"]
+    "features": ["interactive", "functional"]
   }
-}`;
+}
+
+Make it actually work with real interactivity, not placeholders.`;
 
     console.log('⚡ Making fast API call...');
     
@@ -56,7 +49,7 @@ CRITICAL: Return ONLY valid JSON with this EXACT structure. No markdown, no expl
     const response = await Promise.race([
       anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 4000, // INCREASED: Allow longer responses for complex apps
         messages: [{ role: 'user', content: appPrompt }]
       }),
       new Promise<never>((_, reject) => 
@@ -105,6 +98,12 @@ CRITICAL: Return ONLY valid JSON with this EXACT structure. No markdown, no expl
       // Validate required fields
       if (!appData.title || !appData.code || !appData.code['App.tsx']) {
         throw new Error('Missing required fields in AI response');
+      }
+      
+      // Check if the App.tsx code looks complete (not truncated)
+      const appCode = appData.code['App.tsx'];
+      if (!appCode.includes('export default function App') || !appCode.includes('return (') || !appCode.includes(');')) {
+        throw new Error('App.tsx code appears to be truncated');
       }
       
     } catch (parseError) {
