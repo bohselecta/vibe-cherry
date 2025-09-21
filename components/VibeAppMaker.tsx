@@ -145,7 +145,7 @@ function AppBuilder({ idea, onGenerate, theme: GlassTheme }: AppBuilderProps) {
           body: JSON.stringify({ idea, theme, layout })
         }) as Promise<Response>,
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Client timeout')), 28000)
+          setTimeout(() => reject(new Error('Client timeout')), 38000) // INCREASED: 38 seconds to match server
         )
       ]) as Response;
       

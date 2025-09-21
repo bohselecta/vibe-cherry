@@ -53,7 +53,7 @@ Make it actually work with real interactivity, not placeholders.`;
         messages: [{ role: 'user', content: appPrompt }]
       }),
       new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('API timeout')), 25000)
+        setTimeout(() => reject(new Error('API timeout')), 35000) // INCREASED: 35 seconds for complex apps
       )
     ]);
 
