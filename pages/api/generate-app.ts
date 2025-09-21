@@ -304,11 +304,11 @@ export default function App() {
                   <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm ${textColors[theme]}">{item.name}</span>
-                      <span className="text-xs px-2 py-1 rounded-full ${
+                      <span className={\`text-xs px-2 py-1 rounded-full \${
                         item.status === 'active' ? 'bg-green-100 text-green-800' : 
                         item.status === 'completed' ? 'bg-blue-100 text-blue-800' : 
                         'bg-yellow-100 text-yellow-800'
-                      }">
+                      }\`}>
                         {item.status}
                       </span>
                     </div>
