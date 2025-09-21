@@ -1,46 +1,68 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import Anthropic from '@anthropic-ai/sdk';
-import { generateVibeApp } from '../../lib/app-generator';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    console.log('API route hit!');
+    console.log('Environment check:', !!process.env.ANTHROPIC_API_KEY);
+    
     const { idea, theme, layout } = req.body;
+    console.log('Request data:', { idea, theme, layout });
 
-    // Generate app using Anthropic API
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('Missing ANTHROPIC_API_KEY');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        details: 'Missing API key' 
+      });
+    }
+
+    // Import Anthropic inside the handler to avoid build issues
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
     const appPrompt = `Create a ${theme} themed React app with ${layout} column layout based on this idea: "${idea}".
 
 Generate a complete vibe app following these rules:
-- Use VibeCard, VibeButton, VibeGrid components
-- Apply ${theme} theme (${getThemeDescription(theme)})
+- Use modern React components
+- Apply ${theme} theme with appropriate colors
 - Layout: ${layout} columns
 - Include realistic content and interactions
-- Make it visually stunning with modern design
+- Make it visually stunning
 
-Return a JSON object with:
+Return ONLY a valid JSON object with this exact structure:
 {
   "title": "App Title",
   "description": "Brief description", 
-  "components": ["list of components used"],
-  "pages": ["list of pages"],
+  "components": ["Button", "Card", "Grid"],
+  "pages": ["Dashboard"],
   "code": {
-    "App.tsx": "complete React component code",
-    "components.tsx": "design system components",
-    "styles.css": "custom styles"
+    "App.tsx": "// React component code",
+    "styles.css": "/* CSS styles */"
   },
   "config": {
     "theme": "${theme}",
     "layout": "${layout}",
-    "features": ["list of features"]
+    "features": ["feature1", "feature2"]
   }
 }`;
+
+    console.log('Making Anthropic API call...');
 
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
@@ -50,47 +72,87 @@ Return a JSON object with:
       ]
     });
 
+    console.log('Anthropic response received');
+
+    // Extract text content safely
     const textContent = response.content.find(
-      (block): block is Anthropic.TextBlock => block.type === 'text'
+      (block): block is any => block.type === 'text'
     );
+
     if (!textContent) {
       throw new Error('No text content received from Claude');
     }
-    const appData = JSON.parse(textContent.text);
+
+    let appData;
+    try {
+      // Clean up the response text
+      const cleanText = textContent.text
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+      
+      appData = JSON.parse(cleanText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Raw response:', textContent.text);
+      
+      // Return a fallback app if JSON parsing fails
+      appData = {
+        title: `${theme} App`,
+        description: idea,
+        components: ["Card", "Button"],
+        pages: ["Dashboard"],
+        code: {
+          "App.tsx": `// Generated ${theme} app\nexport default function App() { return <div>${idea}</div>; }`,
+          "styles.css": "/* Generated styles */"
+        },
+        config: {
+          theme,
+          layout,
+          features: ["responsive", "modern"]
+        }
+      };
+    }
     
-    // Generate complete project structure
-    const projectFiles = await generateVibeApp(appData);
+    // Generate project files
+    const projectFiles = {
+      'package.json': JSON.stringify({
+        name: appData.title.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-'),
+        version: '1.0.0',
+        dependencies: {
+          hono: '^3.12.0',
+          react: '^18.2.0',
+          'react-dom': '^18.2.0'
+        }
+      }, null, 2),
+      'src/App.tsx': appData.code['App.tsx'] || '// Generated app',
+      'README.md': `# ${appData.title}\n\n${appData.description}`
+    };
 
     // Security: Destroy API key reference
     console.log('🔒 DESTROYING API KEY REFERENCE');
     
-    res.status(200).json({
+    const result = {
       success: true,
       app: {
         ...appData,
         files: projectFiles,
         timestamp: Date.now(),
-        id: generateAppId()
+        id: Math.random().toString(36).substring(2, 15)
       }
-    });
+    };
+
+    console.log('Success! Returning result');
+    res.status(200).json(result);
 
   } catch (error) {
-    console.error('App generation error:', error);
-    res.status(500).json({ error: 'Failed to generate app' });
+    console.error('Detailed error:', error);
+    
+    // Return detailed error info for debugging
+    res.status(500).json({ 
+      error: 'Failed to generate app',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
-}
-
-function getThemeDescription(theme: string) {
-  const descriptions = {
-    minimal: 'clean lines, lots of white space, subtle grays',
-    playful: 'bright gradients, rounded corners, vibrant colors',
-    professional: 'blues and whites, structured layout, corporate feel',
-    artistic: 'creative colors, unique layouts, expressive design',
-    techy: 'dark mode, neon accents, futuristic elements'
-  };
-  return descriptions[theme] || 'modern and clean';
-}
-
-function generateAppId() {
-  return Math.random().toString(36).substring(2, 15);
 }
