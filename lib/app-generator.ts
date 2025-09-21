@@ -23,38 +23,13 @@ export function generateProjectFiles(appData: AppData) {
     'package.json': generatePackageJson(title),
     'devbox.json': generateDevboxConfig(),
     'src/index.tsx': generateHonoServer(),
-    'src/App.tsx': appData.code['App.tsx'] || generateDefaultApp(theme, layout),
+    'src/App.tsx': appData.code['App.tsx'] || generateReactApp(theme, layout),
     'src/components/index.ts': appData.code['components.tsx'] || generateVibeComponents(),
     'src/themes/themes.ts': generateThemeSystem(),
     'static/styles/globals.css': appData.code['styles.css'] || generateGlobalStyles(),
     'deploy/cloudflare.toml': generateCloudflareConfig(title),
     'deploy/tauri.conf.json': generateTauriConfig(title),
     'README.md': generateReadme(title, description, theme), // FIX: Pass theme parameter
-    '.gitignore': generateGitignore(),
-    'tsconfig.json': generateTSConfig(),
-    'tailwind.config.js': generateTailwindConfig()
-  };
-}
-
-export async function generateVibeApp(appData: any) {
-  const { theme, layout, title, description } = appData;
-
-  return {
-    // Core project files
-    'package.json': generatePackageJson(title),
-    'devbox.json': generateDevboxConfig(),
-    'src/index.tsx': generateHonoServer(),
-    'src/App.tsx': generateReactApp(appData),
-    'src/components/index.ts': generateVibeComponents(theme),
-    'src/themes/themes.ts': generateThemeSystem(),
-    'static/styles/globals.css': generateGlobalStyles(theme),
-    
-    // Deployment configs
-    'deploy/cloudflare.toml': generateCloudflareConfig(title),
-    'deploy/tauri.conf.json': generateTauriConfig(title),
-    'README.md': generateReadme(title, description, theme), // FIX: Pass theme parameter
-    
-    // Development helpers
     '.gitignore': generateGitignore(),
     'tsconfig.json': generateTSConfig(),
     'tailwind.config.js': generateTailwindConfig()
@@ -76,6 +51,11 @@ function generatePackageJson(title: string) {
       react: '^18.2.0',
       'react-dom': '^18.2.0',
       'lucide-react': '^0.263.1'
+    },
+    devDependencies: {
+      '@types/react': '^18.2.0',
+      '@types/react-dom': '^18.2.0',
+      'typescript': '^5.0.0'
     }
   }, null, 2);
 }
@@ -117,6 +97,7 @@ app.get('*', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Vibe App</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/static/styles/globals.css">
       </head>
       <body>
         <div id="root">\${html}</div>
@@ -131,71 +112,96 @@ export default {
 };`;
 }
 
-function generateReactApp(appData: any) {
+function generateReactApp(theme: string, layout: string) {
   return `import React from 'react';
 import { VibeCard, VibeButton, VibeGrid } from './components';
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8 text-center">
-          ${appData.title || 'Your Vibe App'}
-        </h1>
-        <p className="text-white/70 text-center mb-12 max-w-2xl mx-auto">
-          ${appData.description || 'A beautiful app generated with Vibe App Maker'}
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100 p-6">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-purple-900 mb-4">
+            Your ${theme} App
+          </h1>
+          <p className="text-purple-700">
+            Generated with ${layout} layout and beautiful design
+          </p>
+        </header>
         
-        <VibeGrid layout="${appData.config?.layout || 'triple'}">
-          <VibeCard title="Feature 1" description="Amazing functionality" />
-          <VibeCard title="Feature 2" description="Incredible features" />
-          <VibeCard title="Feature 3" description="Outstanding performance" />
+        <VibeGrid columns="${layout}" gap="md">
+          <VibeCard>
+            <h3 className="font-semibold text-purple-900 mb-2">Feature 1</h3>
+            <p className="text-purple-700 mb-4">Your app feature description</p>
+            <VibeButton variant="primary">Get Started</VibeButton>
+          </VibeCard>
+          <VibeCard>
+            <h3 className="font-semibold text-purple-900 mb-2">Feature 2</h3>
+            <p className="text-purple-700 mb-4">Another great feature</p>
+            <VibeButton variant="secondary">Learn More</VibeButton>
+          </VibeCard>
+          <VibeCard>
+            <h3 className="font-semibold text-purple-900 mb-2">Feature 3</h3>
+            <p className="text-purple-700 mb-4">Amazing functionality</p>
+            <VibeButton variant="accent">Try It</VibeButton>
+          </VibeCard>
         </VibeGrid>
-        
-        <div className="text-center mt-12">
-          <VibeButton>Get Started</VibeButton>
-        </div>
       </div>
     </div>
   );
 }`;
 }
 
-function generateVibeComponents(theme: string) {
+function generateVibeComponents() {
   return `import React from 'react';
 
-export function VibeCard({ title, description, children }) {
+export function VibeCard({ children, className = "" }) {
   return (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all">
-      <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
-      <p className="text-white/70 mb-4">{description}</p>
+    <div className={\`bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] \${className}\`}>
       {children}
     </div>
   );
 }
 
-export function VibeButton({ children, onClick, ...props }) {
+export function VibeButton({ variant = 'primary', size = 'md', children, onClick, className = "" }) {
+  const variants = {
+    primary: 'bg-purple-600 text-white hover:bg-purple-700',
+    secondary: 'bg-white text-purple-900 border border-purple-200 hover:bg-purple-50',
+    accent: 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700'
+  };
+  
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2',
+    lg: 'px-6 py-3 text-lg'
+  };
+
   return (
     <button 
-      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:scale-105 transition-all"
       onClick={onClick}
-      {...props}
+      className={\`\${variants[variant]} \${sizes[size]} rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95 \${className}\`}
     >
       {children}
     </button>
   );
 }
 
-export function VibeGrid({ children, layout = 'triple' }) {
+export function VibeGrid({ columns = 'triple', gap = 'md', children }) {
   const gridCols = {
     single: 'grid-cols-1',
-    dual: 'grid-cols-2', 
-    triple: 'grid-cols-3',
-    quad: 'grid-cols-4'
+    dual: 'grid-cols-1 md:grid-cols-2',
+    triple: 'grid-cols-1 md:grid-cols-3',
+    quad: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
   };
   
+  const gaps = {
+    sm: 'gap-3',
+    md: 'gap-6',
+    lg: 'gap-8'
+  };
+
   return (
-    <div className={\`grid \${gridCols[layout]} gap-6\`}>
+    <div className={\`grid \${gridCols[columns]} \${gaps[gap]}\`}>
       {children}
     </div>
   );
@@ -203,101 +209,83 @@ export function VibeGrid({ children, layout = 'triple' }) {
 }
 
 function generateThemeSystem() {
-  return `export const themes = {
+  return `export const VibeThemes = {
   minimal: {
-    primary: '#f8f9fa',
-    secondary: '#6c757d',
-    accent: '#007bff'
+    palette: 'from-slate-50 to-gray-100',
+    primary: 'bg-black text-white hover:bg-gray-800',
+    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+    accent: 'bg-gray-900 text-white hover:bg-gray-700',
+    card: 'bg-white/80 backdrop-blur-sm border border-gray-200'
   },
   playful: {
-    primary: '#ff6b9d',
-    secondary: '#4ecdc4', 
-    accent: '#45b7d1'
+    palette: 'from-pink-100 via-purple-50 to-indigo-100',
+    primary: 'bg-gradient-to-r from-pink-500 to-purple-600 text-white',
+    secondary: 'bg-white/90 text-purple-900 hover:bg-white',
+    accent: 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white',
+    card: 'bg-white/70 backdrop-blur-md border border-purple-200/50'
   },
   professional: {
-    primary: '#3b82f6',
-    secondary: '#1e40af',
-    accent: '#06b6d4'
-  },
-  artistic: {
-    primary: '#f59e0b',
-    secondary: '#ef4444',
-    accent: '#8b5cf6'
-  },
-  techy: {
-    primary: '#10b981',
-    secondary: '#06b6d4',
-    accent: '#8b5cf6'
+    palette: 'from-blue-50 to-indigo-100',
+    primary: 'bg-blue-600 text-white hover:bg-blue-700',
+    secondary: 'bg-white text-blue-900 hover:bg-blue-50',
+    accent: 'bg-indigo-600 text-white hover:bg-indigo-700',
+    card: 'bg-white/90 backdrop-blur-sm border border-blue-200'
   }
 };`;
 }
 
-function generateGlobalStyles(theme: string) {
+function generateGlobalStyles() {
   return `@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-black text-white;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-@layer components {
-  .glass-effect {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10;
-  }
-  
-  .glass-hover {
-    @apply hover:bg-white/10 hover:border-white/20 transition-all duration-300;
-  }
-  
-  .gradient-text {
-    @apply bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent;
-  }
-  
-  .vibe-button {
-    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95;
-  }
-  
-  .vibe-card {
-    @apply glass-effect rounded-2xl p-6 glass-hover;
-  }
+.glass-effect {
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }`;
 }
 
 function generateCloudflareConfig(title: string) {
-  return `[build]
-command = "bun run build"
-publish = "build"
+  return `name = "${title.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-')}"
+main = "build/index.js"
+compatibility_date = "2024-01-01"
 
-[[env]]
-name = "NODE_VERSION"
-value = "18"`;
+[build]
+command = "bun run build"`;
 }
 
 function generateTauriConfig(title: string) {
   return JSON.stringify({
+    build: {
+      beforeDevCommand: 'bun run dev',
+      beforeBuildCommand: 'bun run build',
+      devPath: 'http://localhost:3000',
+      distDir: '../build'
+    },
     package: {
       productName: title,
-      version: "1.0.0"
-    },
-    build: {
-      distDir: "../build",
-      devPath: "http://localhost:3000"
+      version: '1.0.0'
     },
     tauri: {
-      allowlist: {
-        all: false
-      }
+      bundle: {
+        identifier: `com.vibestack.${title.toLowerCase().replace(/[^a-zA-Z0-9]/g, '')}`,
+        targets: 'all'
+      },
+      windows: [{
+        title: title,
+        width: 1200,
+        height: 800
+      }]
     }
   }, null, 2);
 }
 
+// FIX: Add theme parameter to generateReadme function
 function generateReadme(title: string, description: string, theme: string) {
   return `# ${title}
 
@@ -341,51 +329,74 @@ This app was generated using the VibeStack framework - the fastest way to build 
 
 function generateGitignore() {
   return `node_modules/
+.next/
+.env.local
+.env
 build/
 dist/
-.env
-.env.local
-.DS_Store
-*.log`;
+*.log
+.DS_Store`;
 }
 
 function generateTSConfig() {
   return JSON.stringify({
     compilerOptions: {
-      target: "ES2020",
-      lib: ["ES2020", "DOM", "DOM.Iterable"],
+      target: 'es2017',
+      lib: ['dom', 'dom.iterable', 'es6'],
       allowJs: true,
       skipLibCheck: true,
       strict: true,
       forceConsistentCasingInFileNames: true,
       noEmit: true,
       esModuleInterop: true,
-      module: "esnext",
-      moduleResolution: "node",
+      module: 'esnext',
+      moduleResolution: 'node',
       resolveJsonModule: true,
       isolatedModules: true,
-      jsx: "react-jsx"
+      jsx: 'preserve',
+      incremental: true
     },
-    include: ["src/**/*"],
-    exclude: ["node_modules"]
+    include: ['**/*.ts', '**/*.tsx'],
+    exclude: ['node_modules']
   }, null, 2);
 }
 
 function generateTailwindConfig() {
-  return `/** @type {import('tailwindcss').Config} */
-module.exports = {
+  return `module.exports = {
   content: [
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
-    extend: {
-      backdropBlur: {
-        xs: '2px',
-      },
-    },
+    extend: {},
   },
   plugins: [],
 }`;
+}
+
+// Keep the original function for backward compatibility
+export async function generateVibeApp(appData: any) {
+  const { theme, layout, title, description } = appData;
+
+  return {
+    // Core project files
+    'package.json': generatePackageJson(title),
+    'devbox.json': generateDevboxConfig(),
+    'src/index.tsx': generateHonoServer(),
+    'src/App.tsx': generateReactApp(theme, layout),
+    'src/components/index.ts': generateVibeComponents(),
+    'src/themes/themes.ts': generateThemeSystem(),
+    'static/styles/globals.css': generateGlobalStyles(),
+    
+    // Deployment configs
+    'deploy/cloudflare.toml': generateCloudflareConfig(title),
+    'deploy/tauri.conf.json': generateTauriConfig(title),
+    'README.md': generateReadme(title, description, theme),
+    
+    // Development helpers
+    '.gitignore': generateGitignore(),
+    'tsconfig.json': generateTSConfig(),
+    'tailwind.config.js': generateTailwindConfig()
+  };
 }
 
 export async function generateCompleteProject(appData: any) {
