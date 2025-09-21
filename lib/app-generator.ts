@@ -1,3 +1,41 @@
+export interface AppData {
+  title: string;
+  description: string;
+  components: string[];
+  pages: string[];
+  code: {
+    'App.tsx': string;
+    'components.tsx': string;
+    'styles.css': string;
+  };
+  config: {
+    theme: string;
+    layout: string;
+    features: string[];
+  };
+}
+
+export function generateProjectFiles(appData: AppData) {
+  const { title, description, config } = appData;
+  const { theme, layout } = config;
+
+  return {
+    'package.json': generatePackageJson(title),
+    'devbox.json': generateDevboxConfig(),
+    'src/index.tsx': generateHonoServer(),
+    'src/App.tsx': appData.code['App.tsx'] || generateDefaultApp(theme, layout),
+    'src/components/index.ts': appData.code['components.tsx'] || generateVibeComponents(),
+    'src/themes/themes.ts': generateThemeSystem(),
+    'static/styles/globals.css': appData.code['styles.css'] || generateGlobalStyles(),
+    'deploy/cloudflare.toml': generateCloudflareConfig(title),
+    'deploy/tauri.conf.json': generateTauriConfig(title),
+    'README.md': generateReadme(title, description, theme), // FIX: Pass theme parameter
+    '.gitignore': generateGitignore(),
+    'tsconfig.json': generateTSConfig(),
+    'tailwind.config.js': generateTailwindConfig()
+  };
+}
+
 export async function generateVibeApp(appData: any) {
   const { theme, layout, title, description } = appData;
 
@@ -14,7 +52,7 @@ export async function generateVibeApp(appData: any) {
     // Deployment configs
     'deploy/cloudflare.toml': generateCloudflareConfig(title),
     'deploy/tauri.conf.json': generateTauriConfig(title),
-    'README.md': generateReadme(title, description),
+    'README.md': generateReadme(title, description, theme), // FIX: Pass theme parameter
     
     // Development helpers
     '.gitignore': generateGitignore(),
@@ -260,23 +298,10 @@ function generateTauriConfig(title: string) {
   }, null, 2);
 }
 
-function generateReadme(title: string, description: string) {
+function generateReadme(title: string, description: string, theme: string) {
   return `# ${title}
 
 ${description}
-
-## Quick Start
-
-\`\`\`bash
-# Install dependencies
-bun install
-
-# Start development server
-bun run dev
-
-# Build for production
-bun run build
-\`\`\`
 
 ## Features
 
@@ -285,24 +310,33 @@ bun run build
 - 📱 Responsive design
 - 🚀 One-command deployment
 
+## Quick Start
+
+\`\`\`bash
+# Install Devbox
+curl -fsSL https://get.jetpack.io/devbox | bash
+
+# Start development
+devbox run dev
+\`\`\`
+
 ## Deployment
 
-### Cloudflare Pages
 \`\`\`bash
-bun run build
-# Deploy build/ folder to Cloudflare Pages
-\`\`\`
+# Build for production
+devbox run build
 
-### Tauri Desktop
-\`\`\`bash
-# Install Tauri CLI
-cargo install tauri-cli
+# Deploy to Cloudflare Workers
+devbox run deploy:edge
 
 # Build desktop app
-tauri build
+devbox run build:desktop
 \`\`\`
 
-Generated with ❤️ by Vibe App Maker`;
+## Built with VibeStack
+
+This app was generated using the VibeStack framework - the fastest way to build beautiful, deployable apps.
+`;
 }
 
 function generateGitignore() {
