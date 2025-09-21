@@ -105,7 +105,13 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
 }
 
 // App Builder Component
-function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: any) => void }) {
+interface AppBuilderProps {
+  idea: string;
+  onGenerate: (config: any) => void;
+  theme: any;
+}
+
+function AppBuilder({ idea, onGenerate, theme: GlassTheme }: AppBuilderProps) {
   const [theme, setTheme] = useState('playful');
   const [layout, setLayout] = useState('triple');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -131,39 +137,38 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
     }, 1000);
 
     try {
-      // CLIENT-SIDE TIMEOUT: 28 seconds (before Vercel's 30s limit)
+      // FIX: Properly type the response
       const response = await Promise.race([
         fetch('/api/generate-app', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idea, theme, layout })
-        }),
-        new Promise((_, reject) => 
+        }) as Promise<Response>,
+        new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Client timeout')), 28000)
         )
-      ]);
+      ]) as Response;
       
       clearInterval(progressInterval);
       clearInterval(timeInterval);
       setProgress(100);
       
+      // FIX: Now TypeScript knows response has .json() method
       const result = await response.json();
       
       if (result.success) {
         onGenerate(result.app);
       } else {
         console.error('Generation failed:', result.error);
-        // Show user-friendly error
         alert('Generation failed. Please try again with a simpler idea.');
       }
-    } catch (error) {
+    } catch (error: any) {
       clearInterval(progressInterval);
       clearInterval(timeInterval);
       
       console.error('Generation error:', error);
       
       if (error.message === 'Client timeout') {
-        // Show timeout message
         alert('Generation is taking longer than expected. Please try again with a simpler app idea.');
       } else {
         alert('Something went wrong. Please try again.');
@@ -512,6 +517,7 @@ export default function VibeAppMaker() {
             <AppBuilder 
               idea={appIdea} 
               onGenerate={handleAppGenerated}
+              theme={GlassTheme}
             />
           )}
 
