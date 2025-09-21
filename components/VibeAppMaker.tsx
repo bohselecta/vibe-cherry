@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Code, Download, Save, Eye, Users, Zap, Heart, ArrowRight, X, Loader2, ExternalLink } from 'lucide-react';
+import { Sparkles, Code, Download, Save, Eye, Users, Zap, Heart, ArrowRight, X, Loader2, ExternalLink, Clock, AlertCircle } from 'lucide-react';
 
 // Clean Glass Theme (no invalid classes)
 const GlassTheme = {
@@ -109,19 +109,43 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
   const [theme, setTheme] = useState('playful');
   const [layout, setLayout] = useState('triple');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0);
 
   const themes = ['minimal', 'playful', 'professional', 'artistic', 'techy'];
   const layouts = ['single', 'dual', 'triple', 'quad'];
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    
+    setProgress(0);
+    setTimeElapsed(0);
+
+    // Progress animation
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + 1, 95));
+    }, 300);
+
+    // Time counter
+    const timeInterval = setInterval(() => {
+      setTimeElapsed(prev => prev + 1);
+    }, 1000);
+
     try {
-      const response = await fetch('/api/generate-app', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea, theme, layout })
-      });
+      // CLIENT-SIDE TIMEOUT: 28 seconds (before Vercel's 30s limit)
+      const response = await Promise.race([
+        fetch('/api/generate-app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idea, theme, layout })
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Client timeout')), 28000)
+        )
+      ]);
+      
+      clearInterval(progressInterval);
+      clearInterval(timeInterval);
+      setProgress(100);
       
       const result = await response.json();
       
@@ -129,12 +153,26 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
         onGenerate(result.app);
       } else {
         console.error('Generation failed:', result.error);
+        // Show user-friendly error
+        alert('Generation failed. Please try again with a simpler idea.');
       }
     } catch (error) {
+      clearInterval(progressInterval);
+      clearInterval(timeInterval);
+      
       console.error('Generation error:', error);
+      
+      if (error.message === 'Client timeout') {
+        // Show timeout message
+        alert('Generation is taking longer than expected. Please try again with a simpler app idea.');
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
     }
     
     setIsGenerating(false);
+    setProgress(0);
+    setTimeElapsed(0);
   };
 
   return (
@@ -195,6 +233,40 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
           </div>
         </div>
 
+        {/* PROGRESS INDICATOR */}
+        {isGenerating && (
+          <div className={`${GlassTheme.glass} rounded-lg p-4 space-y-3`}>
+            <div className="flex items-center justify-between">
+              <span className={`text-sm ${GlassTheme.text}`}>Generating your app...</span>
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4" />
+                <span className={`text-sm ${GlassTheme.textMuted}`}>{timeElapsed}s</span>
+              </div>
+            </div>
+            
+            <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
+              <div 
+                className="bg-white h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            
+            <div className={`text-xs ${GlassTheme.textMuted} text-center`}>
+              {progress < 30 && "🤖 Claude is thinking..."}
+              {progress >= 30 && progress < 60 && "✨ Designing your app..."}
+              {progress >= 60 && progress < 90 && "🔧 Building components..."}
+              {progress >= 90 && "🎨 Adding finishing touches..."}
+            </div>
+
+            {timeElapsed > 20 && (
+              <div className={`text-xs ${GlassTheme.textMuted} text-center flex items-center justify-center space-x-1`}>
+                <AlertCircle className="w-3 h-3" />
+                <span>Taking longer than usual... hang tight!</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <button
           onClick={handleGenerate}
           disabled={isGenerating || !idea.trim()}
@@ -203,7 +275,7 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Generating Your App...</span>
+              <span>Generating Your App... ({timeElapsed}s)</span>
             </>
           ) : (
             <>
@@ -212,6 +284,16 @@ function AppBuilder({ idea, onGenerate }: { idea: string; onGenerate: (config: a
             </>
           )}
         </button>
+
+        {/* SPEED TIPS */}
+        <div className={`${GlassTheme.glass} rounded-lg p-4`}>
+          <h4 className={`text-sm font-medium ${GlassTheme.text} mb-2`}>💡 Speed Tips:</h4>
+          <ul className={`text-xs ${GlassTheme.textMuted} space-y-1`}>
+            <li>• Keep app ideas concise (under 100 words)</li>
+            <li>• Simple concepts generate faster</li>
+            <li>• Minimal theme = fastest generation</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

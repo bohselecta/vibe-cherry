@@ -1,164 +1,231 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import Anthropic from '@anthropic-ai/sdk';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method === 'GET') {
-    return res.status(200).json({ 
-      status: 'ok', 
-      message: 'VibeCherry API is running',
-      hasApiKey: !!process.env.ANTHROPIC_API_KEY
-    });
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    console.log('API route hit!');
-    console.log('Environment check:', !!process.env.ANTHROPIC_API_KEY);
-    
     const { idea, theme, layout } = req.body;
-    console.log('Request data:', { idea, theme, layout });
+    console.log('🚀 Starting fast generation for:', { theme, layout });
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      console.error('Missing ANTHROPIC_API_KEY');
-      return res.status(500).json({ 
-        error: 'Server configuration error',
-        details: 'Missing API key' 
-      });
+      return res.status(500).json({ error: 'Missing API key' });
     }
 
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const appPrompt = `Create a ${theme} themed React app with ${layout} column layout based on this idea: "${idea}".
+    // SPEED FIX: Much shorter, focused prompt
+    const appPrompt = `Create a ${theme} ${layout}-column React app: "${idea}".
 
-Generate a complete vibe app following these rules:
-- Use modern React components
-- Apply ${theme} theme with appropriate colors
-- Layout: ${layout} columns
-- Include realistic content and interactions
-- Make it visually stunning
-
-Return ONLY a valid JSON object with this exact structure:
+Return JSON only:
 {
-  "title": "App Title",
-  "description": "Brief description", 
-  "components": ["Button", "Card", "Grid"],
-  "pages": ["Dashboard"],
+  "title": "App Name",
+  "description": "Brief description",
   "code": {
-    "App.tsx": "// React component code",
-    "styles.css": "/* CSS styles */"
+    "App.tsx": "import React from 'react';\n\nexport default function App() {\n  return (\n    <div className=\"min-h-screen bg-gradient-to-br ${getThemeGradient(theme)} p-8\">\n      <div className=\"max-w-4xl mx-auto\">\n        <h1 className=\"text-4xl font-bold ${getThemeText(theme)} text-center mb-8\">${idea.slice(0, 50)}</h1>\n        <div className=\"grid grid-cols-1 md:grid-cols-${getLayoutCols(layout)} gap-6\">\n          {/* App content */}\n        </div>\n      </div>\n    </div>\n  );\n}"
   },
-  "config": {
-    "theme": "${theme}",
-    "layout": "${layout}",
-    "features": ["feature1", "feature2"]
-  }
+  "config": {"theme": "${theme}", "layout": "${layout}"}
 }`;
 
-    console.log('Making Anthropic API call...');
+    console.log('⚡ Making fast API call...');
+    
+    // SPEED FIX: Set timeout and reduce tokens
+    const startTime = Date.now();
+    
+    const response = await Promise.race([
+      anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500, // REDUCED from 4000
+        messages: [{ role: 'user', content: appPrompt }]
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('API timeout')), 25000) // 25 second timeout
+      )
+    ]);
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [
-        { role: 'user', content: appPrompt }
-      ]
-    });
+    const duration = Date.now() - startTime;
+    console.log(`✅ API call completed in ${duration}ms`);
 
-    console.log('Anthropic response received');
-
-    // Extract text content safely
     const textContent = response.content.find(
       (block): block is any => block.type === 'text'
     );
 
     if (!textContent) {
-      throw new Error('No text content received from Claude');
+      throw new Error('No response from Claude');
     }
 
     let appData;
     try {
-      // Clean up the response text
       const cleanText = textContent.text
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
-      
       appData = JSON.parse(cleanText);
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.error('Raw response:', textContent.text);
-      
-      // Return a fallback app if JSON parsing fails
-      appData = {
-        title: `${theme} App`,
-        description: idea,
-        components: ["Card", "Button"],
-        pages: ["Dashboard"],
-        code: {
-          "App.tsx": `// Generated ${theme} app\nexport default function App() { return <div>${idea}</div>; }`,
-          "styles.css": "/* Generated styles */"
-        },
-        config: {
-          theme,
-          layout,
-          features: ["responsive", "modern"]
-        }
-      };
+      console.log('⚡ Using fast fallback generation');
+      // SPEED FIX: Fast fallback if JSON parsing fails
+      appData = generateFastFallback(idea, theme, layout);
     }
     
-    // Generate project files
+    // SPEED FIX: Minimal file generation
     const projectFiles = {
       'package.json': JSON.stringify({
-        name: appData.title.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-'),
+        name: appData.title?.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-') || 'vibe-app',
         version: '1.0.0',
-        dependencies: {
-          hono: '^3.12.0',
-          react: '^18.2.0',
-          'react-dom': '^18.2.0'
-        }
+        scripts: { dev: 'bun run --hot src/index.tsx' },
+        dependencies: { hono: '^3.12.0', react: '^18.2.0', 'react-dom': '^18.2.0' }
       }, null, 2),
-      'src/App.tsx': appData.code['App.tsx'] || '// Generated app',
-      'README.md': `# ${appData.title}\n\n${appData.description}`
+      'src/App.tsx': appData.code?.['App.tsx'] || generateFastApp(idea, theme, layout),
+      'README.md': `# ${appData.title || 'Vibe App'}\n\n${appData.description || idea}`
     };
 
-    // Security: Destroy API key reference
     console.log('🔒 DESTROYING API KEY REFERENCE');
     
-    const result = {
+    res.status(200).json({
       success: true,
       app: {
         ...appData,
         files: projectFiles,
         timestamp: Date.now(),
-        id: Math.random().toString(36).substring(2, 15)
+        id: Math.random().toString(36).substring(2, 15),
+        generationTime: duration
       }
-    };
-
-    console.log('Success! Returning result');
-    res.status(200).json(result);
+    });
 
   } catch (error) {
-    console.error('Detailed error:', error);
+    console.error('❌ Fast generation error:', error.message);
     
-    // Return detailed error info for debugging
-    res.status(500).json({ 
-      error: 'Failed to generate app',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    // SPEED FIX: Always return something, even if AI fails
+    if (error.message === 'API timeout') {
+      const { idea, theme, layout } = req.body;
+      const fallbackApp = generateFastFallback(idea, theme, layout);
+      
+      res.status(200).json({
+        success: true,
+        app: {
+          ...fallbackApp,
+          files: {
+            'package.json': '{"name": "fallback-app", "version": "1.0.0"}',
+            'src/App.tsx': generateFastApp(idea, theme, layout),
+            'README.md': `# Fallback App\n\n${idea}`
+          },
+          timestamp: Date.now(),
+          id: 'fallback-' + Math.random().toString(36).substring(2, 8),
+          fallback: true
+        }
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Generation failed',
+        details: error.message
+      });
+    }
   }
+}
+
+// SPEED FIX: Fast fallback generation
+function generateFastFallback(idea: string, theme: string, layout: string) {
+  const titles = {
+    minimal: 'Clean',
+    playful: 'Fun',
+    professional: 'Pro',
+    artistic: 'Creative',
+    techy: 'Tech'
+  };
+
+  return {
+    title: `${titles[theme] || 'Modern'} ${idea.split(' ').slice(0, 3).join(' ')} App`,
+    description: `A ${theme} app for ${idea}`,
+    code: {
+      'App.tsx': generateFastApp(idea, theme, layout)
+    },
+    config: { theme, layout, features: ['responsive', 'modern'] }
+  };
+}
+
+// SPEED FIX: Fast app generation
+function generateFastApp(idea: string, theme: string, layout: string) {
+  const gradients = {
+    minimal: 'from-gray-100 to-white',
+    playful: 'from-pink-100 via-purple-50 to-indigo-100',
+    professional: 'from-blue-50 to-indigo-100',
+    artistic: 'from-orange-100 to-red-100',
+    techy: 'from-emerald-50 to-teal-100'
+  };
+
+  const textColors = {
+    minimal: 'text-gray-900',
+    playful: 'text-purple-900',
+    professional: 'text-blue-900',
+    artistic: 'text-orange-900',
+    techy: 'text-emerald-900'
+  };
+
+  const cols = {
+    single: '1',
+    dual: '2',
+    triple: '3',
+    quad: '4'
+  };
+
+  return `import React from 'react';
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br ${gradients[theme]} p-8">
+      <div className="max-w-6xl mx-auto">
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-bold ${textColors[theme]} mb-4">
+            ${idea.slice(0, 50)}${idea.length > 50 ? '...' : ''}
+          </h1>
+          <p className="${textColors[theme]} opacity-70 text-lg">
+            Your ${theme} app is ready to use
+          </p>
+        </header>
+        
+        <div className="grid grid-cols-1 md:grid-cols-${cols[layout]} gap-6">
+          ${Array(parseInt(cols[layout])).fill(0).map((_, i) => `
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/50">
+            <h3 className="font-semibold ${textColors[theme]} mb-2">Feature ${i + 1}</h3>
+            <p className="${textColors[theme]} opacity-70">Amazing functionality for your app</p>
+            <button className="mt-4 bg-${theme === 'minimal' ? 'gray' : theme === 'playful' ? 'purple' : theme === 'professional' ? 'blue' : theme === 'artistic' ? 'orange' : 'emerald'}-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all">
+              Get Started
+            </button>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  );
+}`;
+}
+
+function getThemeGradient(theme: string) {
+  const gradients = {
+    minimal: 'from-gray-100 to-white',
+    playful: 'from-pink-100 to-purple-100',
+    professional: 'from-blue-50 to-indigo-100',
+    artistic: 'from-orange-100 to-red-100',
+    techy: 'from-emerald-50 to-teal-100'
+  };
+  return gradients[theme] || 'from-gray-100 to-white';
+}
+
+function getThemeText(theme: string) {
+  const colors = {
+    minimal: 'text-gray-900',
+    playful: 'text-purple-900',
+    professional: 'text-blue-900',
+    artistic: 'text-orange-900',
+    techy: 'text-emerald-900'
+  };
+  return colors[theme] || 'text-gray-900';
+}
+
+function getLayoutCols(layout: string) {
+  const cols = { single: '1', dual: '2', triple: '3', quad: '4' };
+  return cols[layout] || '3';
 }

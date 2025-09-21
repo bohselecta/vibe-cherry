@@ -1,7 +1,8 @@
 {
   "functions": {
     "pages/api/generate-app.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 1024
     }
   }
 }
