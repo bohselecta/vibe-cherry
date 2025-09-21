@@ -73,9 +73,9 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
             placeholder="Share your thoughts..."
             className={`w-full h-32 ${GlassTheme.glass} rounded-lg p-4 ${GlassTheme.text} placeholder-white/50 border-0 focus:ring-2 focus:ring-white/30 resize-none`}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.shiftKey === false && e.target.value.trim()) {
+              if (e.key === 'Enter' && e.shiftKey === false && (e.target as HTMLTextAreaElement).value.trim()) {
                 e.preventDefault();
-                handleAnswer(e.target.value.trim());
+                handleAnswer((e.target as HTMLTextAreaElement).value.trim());
               }
             }}
           />
@@ -90,8 +90,8 @@ function IdeationQuestionnaire({ onComplete, onClose }: { onComplete: (idea: str
             Previous
           </button>
           <button 
-            onClick={() => handleAnswer(document.querySelector('textarea').value.trim())}
-            disabled={!document.querySelector('textarea')?.value.trim()}
+            onClick={() => handleAnswer((document.querySelector('textarea') as HTMLTextAreaElement)?.value.trim() || '')}
+            disabled={!(document.querySelector('textarea') as HTMLTextAreaElement)?.value.trim()}
             className={`${GlassTheme.primary} px-6 py-2 rounded-lg flex items-center space-x-2`}
           >
             <span>{currentQuestion === questions.length - 1 ? 'Generate Idea' : 'Next'}</span>
