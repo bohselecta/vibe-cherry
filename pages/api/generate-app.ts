@@ -18,18 +18,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    // SPEED FIX: Much shorter, focused prompt
-    const appPrompt = `Create a ${theme} ${layout}-column React app: "${idea}".
+    // ENHANCED: Create functional, interactive apps
+    const appPrompt = `Create a fully functional ${theme} themed React app for: "${idea}"
 
-Return JSON only:
+REQUIREMENTS:
+- Use React hooks (useState, useEffect) for interactivity
+- Include realistic mock data and working features
+- Make it actually functional, not just placeholder text
+- Use Tailwind CSS for styling
+- Include proper event handlers and state management
+- Make it look professional and polished
+
+THEME: ${theme} (${getThemeDescription(theme)})
+LAYOUT: ${layout} columns
+
+Return ONLY valid JSON:
 {
-  "title": "App Name",
-  "description": "Brief description",
+  "title": "Specific App Name",
+  "description": "What this app actually does",
   "code": {
-    "App.tsx": "import React from 'react';\n\nexport default function App() {\n  return (\n    <div className=\"min-h-screen bg-gradient-to-br ${getThemeGradient(theme)} p-8\">\n      <div className=\"max-w-4xl mx-auto\">\n        <h1 className=\"text-4xl font-bold ${getThemeText(theme)} text-center mb-8\">${idea.slice(0, 50)}</h1>\n        <div className=\"grid grid-cols-1 md:grid-cols-${getLayoutCols(layout)} gap-6\">\n          {/* App content */}\n        </div>\n      </div>\n    </div>\n  );\n}"
+    "App.tsx": "// Complete functional React component with useState, handlers, mock data, and real functionality"
   },
-  "config": {"theme": "${theme}", "layout": "${layout}"}
-}`;
+  "config": {
+    "theme": "${theme}",
+    "layout": "${layout}",
+    "features": ["working", "interactive", "functional"]
+  }
+}
+
+Generate working functionality, not placeholders. Include actual state management, event handlers, and realistic data.`;
 
     console.log('⚡ Making fast API call...');
     
@@ -81,7 +98,7 @@ Return JSON only:
         scripts: { dev: 'bun run --hot src/index.tsx' },
         dependencies: { hono: '^3.12.0', react: '^18.2.0', 'react-dom': '^18.2.0' }
       }, null, 2),
-      'src/App.tsx': appData.code?.['App.tsx'] || generateFastApp(idea, theme, layout),
+      'src/App.tsx': appData.code?.['App.tsx'] || generateFunctionalApp(idea, theme, layout),
       'README.md': `# ${appData.title || 'Vibe App'}\n\n${appData.description || idea}`
     };
 
@@ -112,7 +129,7 @@ Return JSON only:
           ...fallbackApp,
           files: {
             'package.json': '{"name": "fallback-app", "version": "1.0.0"}',
-            'src/App.tsx': generateFastApp(idea, theme, layout),
+            'src/App.tsx': generateFunctionalApp(idea, theme, layout),
             'README.md': `# Fallback App\n\n${idea}`
           },
           timestamp: Date.now(),
@@ -129,7 +146,7 @@ Return JSON only:
   }
 }
 
-// SPEED FIX: Fast fallback generation
+// ENHANCED: Fast fallback generation with real functionality
 function generateFastFallback(idea: string, theme: string, layout: string) {
   const titles: Record<string, string> = {
     minimal: 'Clean',
@@ -141,16 +158,16 @@ function generateFastFallback(idea: string, theme: string, layout: string) {
 
   return {
     title: `${titles[theme] || 'Modern'} ${idea.split(' ').slice(0, 3).join(' ')} App`,
-    description: `A ${theme} app for ${idea}`,
+    description: `A functional ${theme} app for ${idea}`,
     code: {
-      'App.tsx': generateFastApp(idea, theme, layout)
+      'App.tsx': generateFunctionalApp(idea, theme, layout)
     },
-    config: { theme, layout, features: ['responsive', 'modern'] }
+    config: { theme, layout, features: ['interactive', 'functional', 'responsive'] }
   };
 }
 
-// SPEED FIX: Fast app generation
-function generateFastApp(idea: string, theme: string, layout: string) {
+// ENHANCED: Generate functional app with real interactivity
+function generateFunctionalApp(idea: string, theme: string, layout: string) {
   const gradients: Record<string, string> = {
     minimal: 'from-gray-100 to-white',
     playful: 'from-pink-100 via-purple-50 to-indigo-100',
@@ -167,6 +184,14 @@ function generateFastApp(idea: string, theme: string, layout: string) {
     techy: 'text-emerald-900'
   };
 
+  const buttonColors: Record<string, string> = {
+    minimal: 'bg-gray-600 hover:bg-gray-700',
+    playful: 'bg-purple-600 hover:bg-purple-700',
+    professional: 'bg-blue-600 hover:bg-blue-700',
+    artistic: 'bg-orange-600 hover:bg-orange-700',
+    techy: 'bg-emerald-600 hover:bg-emerald-700'
+  };
+
   const cols: Record<string, string> = {
     single: '1',
     dual: '2',
@@ -174,9 +199,55 @@ function generateFastApp(idea: string, theme: string, layout: string) {
     quad: '4'
   };
 
-  return `import React from 'react';
+  const colCount = parseInt(cols[layout] || '3');
+
+  return `import React, { useState, useEffect } from 'react';
 
 export default function App() {
+  const [items, setItems] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [count, setCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Simulate data loading
+  useEffect(() => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setItems([
+        { id: 1, name: 'Sample Item 1', status: 'active' },
+        { id: 2, name: 'Sample Item 2', status: 'pending' },
+        { id: 3, name: 'Sample Item 3', status: 'completed' }
+      ]);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
+  const handleAddItem = () => {
+    if (inputValue.trim()) {
+      const newItem = {
+        id: Date.now(),
+        name: inputValue,
+        status: 'active'
+      };
+      setItems([...items, newItem]);
+      setInputValue('');
+      setCount(count + 1);
+    }
+  };
+
+  const handleRemoveItem = (id) => {
+    setItems(items.filter(item => item.id !== id));
+    setCount(Math.max(0, count - 1));
+  };
+
+  const handleToggleStatus = (id) => {
+    setItems(items.map(item => 
+      item.id === id 
+        ? { ...item, status: item.status === 'active' ? 'completed' : 'active' }
+        : item
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br ${gradients[theme]} p-8">
       <div className="max-w-6xl mx-auto">
@@ -184,25 +255,125 @@ export default function App() {
           <h1 className="text-4xl font-bold ${textColors[theme]} mb-4">
             ${idea.slice(0, 50)}${idea.length > 50 ? '...' : ''}
           </h1>
-          <p className="${textColors[theme]} opacity-70 text-lg">
-            Your ${theme} app is ready to use
+          <p className="${textColors[theme]} opacity-70 text-lg mb-6">
+            A functional ${theme} app with real interactivity
           </p>
+          <div className="flex justify-center space-x-4 mb-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2">
+              <span className="${textColors[theme]} font-semibold">Items: {items.length}</span>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2">
+              <span className="${textColors[theme]} font-semibold">Actions: {count}</span>
+            </div>
+          </div>
         </header>
         
-        <div className="grid grid-cols-1 md:grid-cols-${cols[layout]} gap-6">
-          ${Array(parseInt(cols[layout] || '3')).fill(0).map((_, i) => `
+        <div className="grid grid-cols-1 md:grid-cols-${colCount} gap-6">
+          {/* Input Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/50">
-            <h3 className="font-semibold ${textColors[theme]} mb-2">Feature ${i + 1}</h3>
-            <p className="${textColors[theme]} opacity-70">Amazing functionality for your app</p>
-            <button className="mt-4 bg-${theme === 'minimal' ? 'gray' : theme === 'playful' ? 'purple' : theme === 'professional' ? 'blue' : theme === 'artistic' ? 'orange' : 'emerald'}-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all">
-              Get Started
-            </button>
-          </div>`).join('')}
+            <h3 className="font-semibold ${textColors[theme]} mb-4">Add New Item</h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Enter item name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-${theme === 'minimal' ? 'gray' : theme === 'playful' ? 'purple' : theme === 'professional' ? 'blue' : theme === 'artistic' ? 'orange' : 'emerald'}-500"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddItem()}
+              />
+              <button
+                onClick={handleAddItem}
+                className="w-full ${buttonColors[theme]} text-white px-4 py-2 rounded-lg transition-all hover:scale-105"
+              >
+                Add Item
+              </button>
+            </div>
+          </div>
+
+          {/* Items List */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/50">
+            <h3 className="font-semibold ${textColors[theme]} mb-4">Items List</h3>
+            {isLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 ${buttonColors[theme].split(' ')[0]} mx-auto"></div>
+                <p className="${textColors[theme]} mt-2">Loading...</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm ${textColors[theme]}">{item.name}</span>
+                      <span className="text-xs px-2 py-1 rounded-full ${
+                        item.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        item.status === 'completed' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-yellow-100 text-yellow-800'
+                      }">
+                        {item.status}
+                      </span>
+                    </div>
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={() => handleToggleStatus(item.id)}
+                        className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        Toggle
+                      </button>
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {items.length === 0 && (
+                  <p className="${textColors[theme]} opacity-70 text-center py-4">No items yet. Add some above!</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Stats Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/50">
+            <h3 className="font-semibold ${textColors[theme]} mb-4">Statistics</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="${textColors[theme]}">Total Items:</span>
+                <span className="font-semibold ${textColors[theme]}">{items.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="${textColors[theme]}">Active Items:</span>
+                <span className="font-semibold ${textColors[theme]}">{items.filter(i => i.status === 'active').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="${textColors[theme]}">Completed:</span>
+                <span className="font-semibold ${textColors[theme]}">{items.filter(i => i.status === 'completed').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="${textColors[theme]}">Actions Taken:</span>
+                <span className="font-semibold ${textColors[theme]}">{count}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }`;
+}
+
+// Add missing getThemeDescription function
+function getThemeDescription(theme: string) {
+  const descriptions: Record<string, string> = {
+    minimal: 'clean, simple, and elegant design',
+    playful: 'fun, colorful, and engaging interface',
+    professional: 'business-focused, clean, and trustworthy',
+    artistic: 'creative, expressive, and visually striking',
+    techy: 'modern, technical, and innovative look'
+  };
+  return descriptions[theme] || 'modern and clean design';
 }
 
 function getThemeGradient(theme: string) {
