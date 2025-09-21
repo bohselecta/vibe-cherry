@@ -26,15 +26,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-async function createProjectZip(files) {
-  // Simple zip creation (you'd use a proper zip library in production)
-  const JSZip = require('jszip');
-  const zip = new JSZip();
+async function createProjectZip(files: Record<string, string>) {
+  // For now, return a simple text file with all the code
+  // In production, you'd use a proper zip library like JSZip
+  const projectContent = Object.entries(files)
+    .map(([path, content]) => `\n\n=== ${path} ===\n${content}`)
+    .join('');
 
-  // Add all project files
-  Object.entries(files).forEach(([path, content]) => {
-    zip.file(path, content);
-  });
-
-  return await zip.generateAsync({ type: 'nodebuffer' });
+  return Buffer.from(projectContent, 'utf8');
 }
